@@ -1604,7 +1604,7 @@ function buildClassNav() {
       if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
       return a.localeCompare(b);
     });
-  document.getElementById('classNavList').innerHTML = classes.slice(0,8).map(c => {
+  document.getElementById('classNavList').innerHTML = classes.map(c => {
     const count = allRows.filter(r => r.className === c).length;
     const label = CLASS_NAMES[c] || c;
     return `<div class="nav-item" onclick="filterByClass('${c.replace(/'/g,"\\'")}')">
