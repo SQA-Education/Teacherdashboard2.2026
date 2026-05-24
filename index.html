@@ -1098,10 +1098,10 @@ function finishLoad() {
   allRows.forEach(r => {
     const cls = (r.className || '').trim();
     // Extract class number if it starts with it e.g. "3088 - Mon/Wed..."
-    const numMatch = cls.match(/^(30\d{2})/);
+    const numMatch = cls.match(/^(3\d{3})/);
     if (numMatch) { r.className = numMatch[1]; return; }
     // Extract class number if it's embedded e.g. "A2 Session 7 - 3086"
-    const embeddedMatch = cls.match(/-(\s*30\d{2})/);
+    const embeddedMatch = cls.match(/-(\s*3\d{3})/);
     if (embeddedMatch) { r.className = embeddedMatch[1].trim(); return; }
     // If className is a full teacher name, replace with Unknown Class
     const fullTeacherNames = ['angela gradiska','jonelle williams','laura ebel','eunice salazar','hector amaya'];
