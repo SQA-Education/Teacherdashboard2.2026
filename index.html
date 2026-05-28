@@ -855,6 +855,31 @@ const CLASS_NAMES = {
   "3102": "3102 - B2 (Angela)",
   "3103": "3103 - B1 (Jonelle)",
 };
+
+// ── Teacher attribution (TERM 3 2026) ──────────────
+// Reverse map: class code → owning teacher, built from TEACHER_CLASSES.
+const CODE_TO_TEACHER = {};
+Object.entries(TEACHER_CLASSES).forEach(([teacher, keys]) => {
+  keys.forEach(k => { if (/^3\d{3}$/.test(k)) CODE_TO_TEACHER[k] = teacher; });
+});
+// Name-only keywords (no class codes / level words) for matching the Teacher field.
+const NAME_NOISE = ['a1','a2','b1','b2','c1','conversation','conv'];
+const TEACHER_NAME_KEYS = {};
+Object.entries(TEACHER_CLASSES).forEach(([teacher, keys]) => {
+  TEACHER_NAME_KEYS[teacher] = keys.filter(k => !/^3\d{3}$/.test(k) && !NAME_NOISE.includes(k));
+});
+
+// Decide which teacher a row belongs to: class code first (authoritative),
+// then the Teacher field. Returns '' if the row can't be attributed at all.
+function resolveTeacher(className, teacherField) {
+  const codeMatch = String(className || '').match(/3\d{3}/);
+  if (codeMatch && CODE_TO_TEACHER[codeMatch[0]]) return CODE_TO_TEACHER[codeMatch[0]];
+  const tf = String(teacherField || '').toLowerCase();
+  for (const [teacher, keys] of Object.entries(TEACHER_NAME_KEYS)) {
+    if (keys.some(k => k && tf.includes(k))) return teacher;
+  }
+  return '';
+}
 // ═══════════════════════════════════════════════════
 
 let allRows = [];
@@ -1108,19 +1133,13 @@ function finishLoad() {
     if (fullTeacherNames.includes(cls.toLowerCase())) r.className = 'Unknown Class';
   });
 
-  // Filter by teacher if not admin
+  // Filter by teacher if not admin.
+  // Each row is attributed to exactly one teacher (class code first, then the
+  // Teacher field). A teacher only ever sees rows that resolve to them — so
+  // unidentified rows no longer leak into every teacher's view.
   let rows = allRows;
   if (currentRole === 'teacher') {
-    rows = allRows.filter(r => {
-      const teacherLower = (r.teacher || '').toLowerCase();
-      const classLower = (r.className || '').toLowerCase();
-      const selected = currentTeacher.toLowerCase();
-      // Always show Unknown Class rows so no submissions are hidden from teachers
-      if (classLower === 'unknown class' || classLower === '') return true;
-      // Match by first name in teacher field or class name
-      return teacherLower.includes(selected) || classLower.includes(selected) ||
-        (TEACHER_CLASSES[currentTeacher] || []).some(c => teacherLower.includes(c) || classLower.includes(c));
-    });
+    rows = allRows.filter(r => resolveTeacher(r.className, r.teacher) === currentTeacher);
   }
   filteredRows = rows;
   allRows = currentRole === 'admin' ? allRows : rows;
